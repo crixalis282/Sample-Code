@@ -1,0 +1,116 @@
+using System;
+using System.Collections.Generic;
+using System.Linq;
+using System.Text.RegularExpressions;
+
+namespace Rextester
+{
+    public class Program
+    {
+        public static void Main(string[] args)
+        {
+            /////////////////////////////////////////////////////////////////
+            ////// Input
+            /////////////////////////////////////////////////////////////////
+            String inputLog = @"filename      created time
+                            -----------   ------------
+                            log1234.log   2019-01-01 13:41:21
+                            log2913.log   2019-01-01 15:12:07
+                            log3192.log   2019-01-02 01:53:49
+                            log3322.log   2019-01-02 23:30:54
+                            log3561.log   2019-01-03 08:01:03
+                            log5678.log   2019-01-06 11:27:25
+                            log7890.log   2019-01-07 03:44:55
+                            log8888.log   2019-01-07 19:36:34";
+            
+            String inputStartDate = "2019-01-01";
+            String inputEndDate = "2019-01-07";
+            /////////////////////////////////////////////////////////////////
+        
+            ////// Initialize / Declare
+            const String logFName = "log";
+            const String stringFile = "file";
+            const String stringFiles = "files";
+
+            List<GroupDate> groupLogDate = new List<GroupDate>{};
+
+            
+            ////// Body
+            List<String> inputLogList = inputLog.Split(new[] {Environment.NewLine}, StringSplitOptions.None).ToList();            
+            List<String> dateList = new List<String>{};
+
+            //// Substring for date only
+            foreach(String n in inputLogList)
+            {
+                if(n.Trim().Substring(0,3).ToLower().Equals(logFName))
+                {
+                    dateList.Add(n.Trim().Substring(14,10));
+
+                }
+            }
+            
+            
+            //// Counting date
+            groupLogDate = dateList
+                .GroupBy(s => s)
+                .Select(x => new GroupDate(){
+                    date = x.Key,
+                    count = x.Count()
+                }).ToList();
+                        
+            
+            //// Process input date range  
+            List<String> requestDateRange = new List<String>{};
+            DateTime startDate = Convert.ToDateTime(inputStartDate);            
+            DateTime endDate = Convert.ToDateTime(inputEndDate);
+            
+            for(DateTime s = startDate; s <= endDate; s=s.AddDays(1))
+            {
+                requestDateRange.Add(String.Format("{0:yyyy-MM-dd}", s));
+            }
+            
+            
+            //// Join the request date
+            requestDateRange.ForEach(x => groupLogDate.Add(new GroupDate(x,0)));
+            
+            groupLogDate = groupLogDate
+                .GroupBy(x => x.date)
+                .Select(y => new GroupDate(){
+                    date = y.First().date, 
+                    count = y.Sum(s => s.count)
+                }).OrderBy(o => o.date).ToList();
+            
+            
+            ////// Output
+            foreach(GroupDate gl in groupLogDate)
+            {
+                Console.WriteLine(
+                    gl.date + ": " 
+                    + gl.count + " "
+                    + ( gl.count>1 ? stringFiles : stringFile)
+                );
+            }
+            
+            groupLogDate = null;
+            inputLogList = null;
+            dateList = null;
+            requestDateRange = null;
+                
+        }
+    }
+    
+    public class GroupDate {
+        
+        public string date {get; set;}
+        public int count {get; set;}
+        
+        public GroupDate() { }
+        public GroupDate(string date, int count)
+        {
+            this.date = date;
+            this.count = count;
+        }
+        
+    }
+   
+}
